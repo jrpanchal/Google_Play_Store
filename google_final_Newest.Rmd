@@ -1,0 +1,667 @@
+---
+title: "Google Play Store"
+author: "Jesal Panchal and Monika Patel"
+subtitle: Analyzing through Data Science R
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  html_notebook:
+    number_sections: yes
+    theme: readable
+    highlight: pygments
+    toc: yes
+    toc_float:
+      collapsed: yes
+---
+![](logo.jpg){width=1in}
+
+# Introduction to Google Play Store
+
+Every year the App Store is probably generating so much revenue especially with the increase in tech usage. The pressure comes onto the App developers on making sure all the factors line up to increase the installation of the App. "The average smart phone owner uses 10 apps per day and 30 apps each month" (buildfire).
+
+The goal of this analysis is to acknowledge the potential details about Google Play Store but most importantly understanding which variables influence the increase in app installation. This will provide 
+
+## Research and Findings
+
+Through research, the Google Play Store uses a certain algorithm to decide where the app should be located in the search engine such as ranked 5 or ranked 35th. "In 2016, 2.4 million mobile apps were published"(F, 2017).
+
+Google Play store has broke apps into 41 general categories, out of which education is the major category consisting of total 8% of the total number of apps. Overall, eight categories are comprised of more than half (53.58%) of the apps available in the download. (Education, Entertainment, Personalization, Tools, Lifestyle, Books, and research).Google Play Store doesn't provide all the services to every country. There are four apps which were downloaded between 1 billion to 5 billion times: Google Maps, Gmail ,Google Play Services and YouTube.
+
+
+
+Identifying the myths about app store Optimization... https://neilpatel.com/blog/5-myths-about-aso/
+Mobile Apps developed each year, by region:https://askwonder.com/research/mobile-apps-made-year-united-states-kingdom-europe-asia-lr1i0fh9w
+
+![Components of an App Store](Optimization.jpg)
+
+## Business Problem
+
+> What factors impact App downloads and popularity on the Google Play store? 
+
+As noted above, app are being created by the minute and Google is updating their operating system. "In essence, it’s a fusion of the Chrome and Android operating systems (OS)"(Osborne, 2020). There has been hints of it having new features. Therefore, it is important to stay relevant and inspect the current elements that make up the Google Play Store since it will be a build up on the current structure.
+
+The testings and observations below will analyze the main factors that affect the number of installations and how to improve popularity. The goal is to gather valuable insights to provide correct business decision for developers. The deciding factors will assist the developers to use these crucial factors for the success of the app store.
+
+### The analysis {#custom-id}
+- Will be able to resonate with the developers and assist with decision making on future apps. 
+- What will be doing: such as making what sort of graphs. 
+- The developers already have some sore of algorthium on developing apps and how to keep it consistent. 
+
+## Data
+
+Data obtained from [Google Play Store]https://www.kaggle.com/lava18/google-play-store-apps. 
+
+```{r Loading Package and data, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(broom)
+#loading the data
+g_data <- read_excel("googleplaystore.xls") 
+```
+
+### Variable description
+```{r Identifying Variable}
+#calling the columns of the new 
+colnames(g_data)
+```
+The goal is to **infer** ("*how*" the factors influence installation?")
+*App Size, Rating, Reviews, Type, Price* affecting *Installs*: most importantly "how" and "why" these variables affect the most. 
+
+App
+: The name of the App 
+
+Category - Categorical Variable
+: The group it belongs to 
+
+Rating - Ordinal Variable
+: A measure of how much users enjoyed the app (0-4) low to high.
+
+Reviews - Numerical Variable
+: A public comment on the users' thoughts about the app -> a numerical measurement of the total amount
+
+Size - Numerical Variable
+: How much space the app will take on the device
+
+Installs - Numerical Variable
+: The number of downloads made overall
+
+Type - Binary Variable
+: If the app is free or a paid version
+
+Price - Numerical Variable
+: Fees on the app to download [the cost ranges]
+
+Content_Rating - Categorical Variable
+: Informs the users of the content and is appropriate to certain territories or specific users
+
+Genres - - Categorical Variable
+: The type of game in a certain category 
+
+Last_Updated 
+: Version of the app on the device sometimes serves various purposes
+
+# Data Preparation
+**Leveling up the data by cleaning the dataset**
+ 
+Understanding the data set by checking out the structure also assists with understanding what to change to properly test out models. This will guide the decision making on what to remove, change and or if there is any cleaning necessary. It's important to note that the raw data is usually unstructured and will cause errors in testing and while building models. They can hold values that are in the incorrect format. The raw dataset incorrectly identified the classes for few of the variables already. 
+
+```{r Checking the data }
+str(g_data)
+```
+
+  The following data set was organized in the steps below without going into many details. Started with 13 columns and 10,841 apps, several investigations later, the final data set was reshaped into 11 columns and 9365 apps. 
+  
+  For testing purposes:  
+  
+  1. the '+' & ',' were removed from the Installs column 
+  
+  2.  The variables current version and android version were removed
+  
+  3.  1481 Na values from Rating were removed since it the values would have caused skweness if calculated by the median.
+  
+  4. Converted the class from character to numeric so calculations can be done.
+  
+  5. Changed the nomenclature for the program to reconize the variable.
+  
+  6. There was no imputation since calculated values for rating, reviews, or installs would've skewed the distribution.
+  
+  
+## Remove and Changing unused variables
+
+```{r removing variable, echo=FALSE}
+#removing the Current version and Android Version column
+g_data <- g_data[, -c(12,13)]
+```
+
+```{r removing unique values , echo=FALSE}
+#removing the last character in Installs +
+g_data$Installs = substr(g_data$Installs,1,nchar(g_data$Installs)-1)
+
+#removing the commas to change into numeric
+g_data$Installs<-as.numeric(gsub(",","", g_data$Installs))
+```
+
+**Changing variable names and class**
+
+```{r renaming variables with space, echo=FALSE}
+# renamed the variables since spaces can not be identified
+g_data = g_data %>% 
+  rename(Content_Rating = "Content Rating")
+g_data = g_data %>%
+  rename(`Size_MB` = "Size (MB)")
+g_data = g_data %>%
+  rename(`Last_Updated` = "Last Updated")
+```
+
+```{r changing variable class, echo=FALSE}
+#changing character to numeric variables 
+g_data$Rating<-as.numeric(as.character(g_data$Rating))
+
+#changing character to numeric variables 
+g_data$Price<-as.numeric(as.character(g_data$Price))
+
+g_data$Last_Updated <-as.Date(g_data$Last_Updated, format = "%m/%d/%Y", origin = "%Y %m %d")
+sapply(g_data, class)
+```
+
+## Missing values in data
+After scanning all the variables, we could see three variables had NA values- Rating, Price and Type. 
+
+Examining the total number of Na value in data to ensure the data is reliable: 
+```{r NA values in data}
+sum(is.na(g_data))
+colSums(is.na(g_data))
+```
+
+**Removing the Na values from all variables**
+
+As the Size variable has no NA values, but it does consist of a unique value called 'Varies with device'. When we change this variable to numeric, the values will become NA. We are imputing these NA values with the average size of apps.
+```{r dropping NA values,echo=FALSE}
+#removing the NA values in Rating, Price, and Type
+g_data <- g_data %>% #calling the entire data set
+  drop_na(App, Rating, Price, Type, Installs) #dropping the values
+```
+
+```{r Check the NA values}
+sum(is.na(g_data))
+colSums(is.na(g_data))
+```
+
+Now that all the Na values have been removed, the testings can now proceed. All these steps were necessary to get more accurate results without any interruption. For solving linear models, the class and names had to be changed to refrain from any issues during the data exploration. 
+
+# Solving the Problem 
+**Conducting the Exploratory Analysis**
+
+- Rating
+- Review
+- Installs
+- Size MB
+- Price
+
+## Identifying key trends
+```{r slice_max with select}
+g_data %>% 
+  slice_max(Installs, n=10) 
+```
+The max installs in the google play store is 1 million installs that are all free and last updated around August 2018. The top category is communication, game, and social but aside from the obvious the other 2 that follow are photography and travel/local. There is a wide variation in the amount of review in just the top 10 rows which is only a small sample of the population. This variable could suitable as one of the factors that increase popularity of the app.  
+
+```{r max of all variabls with select}
+g_data %>% 
+  select(Reviews, Rating, Installs, Price) %>% 
+  map(max)
+```
+As noticed Google play Store's revenue doesn't come from the price paid as a results most of the apps are free.  They all have been recently updated to keep the app running faster, no one likes a slow app people stop using it. To gather more insight in the data, the max of the select variables were taken. Namely, apps with high ratings are supposed to have more installations with the help of modeling the analyis should be able to answer that. 
+
+
+```{r Calculating count by Type,echo = FALSE}
+#Count the number of observations of Type: Free and Paid
+g_data %>% 
+  group_by(Type) %>% 
+  summarise(count = n())
+```
+
+Observing the data, most of the apps are free specifiying that most of Google Play Store's revenue doesn't come from expensive or paid apps. 
+
+```{r Finding the Mean,Median, Standard Deviation,Range of Rating}
+g_data %>% 
+#Calculating the Central Tendency 
+  summarise(Rating_mean = round(mean(Rating, na.rm = TRUE), digits = 2), 
+            Rating_median = median(Rating,na.rm = TRUE),  
+#Calculating the Variation
+            Rating_sd = round(sd(Rating,na.rm = TRUE), digits = 2),
+            Rating_range = range(Rating, na.rm = TRUE))
+  
+```
+ 
+```{r average installs by genre}
+g_data %>% 
+  group_by(Genres) %>% 
+  filter(Rating > 4.19) %>% #4.19 is the average rating 
+  summarise(mean(Installs))
+```
+Speaking of popularity, worth looking at the genres by that are above the average rating for the over all population. As shown, the genres are quite leaning towards entertainment and gaminig which can encouage developers to create more apps as such. 
+
+**Mutating**
+
+Taking the log of installs since the skewness is towards large values: 
+```{r Mutate log Installs}
+g_data = g_data%>% 
+  mutate(log_installs = log(Installs))
+```
+
+```{r Mutate log Reviews}
+g_data = g_data%>% 
+  mutate(log_reviews = log(Reviews))
+```
+
+## Insights
+
+<br>
+*Figure 1: RATING VS TYPE*
+<br><font size = "3">
+**How is Rating effected by Type? Whether apps are being paid or free significantly effect the ratings?**
+
+```{r bar graph of rating by type}
+ggplot(data = g_data,aes(x =Rating, fill=Type)) +
+  geom_bar() +
+  labs(title = "Google Play Store Ratings by Type",
+     x = "Rating",
+     y = "Type")+
+   theme(plot.title = element_text(hjust = 0.5))
+```
+
+By observing this histogram, it is interpreted that the majority ratings for both free and paid apps lie between 4 to 5. It shows that paid apps have marginally better ratings compared to free apps.
+However, there is a slight difference in the mean of ratings for free and paid apps. Paid apps have a slightly higher mean rating compared to free apps. 
+
+The difference is not significant. Therefore, the results shows that ratings are not effected by the type of the app, whether it is free or paid. Thus, we can infer that it is not necessary that the app has to be paid to get better ratings. 
+
+<br>
+*Figure 2: TYPE VS LOG_INSTALLS*
+<br><font size = "3">
+**Does the app being free or pain impact the installations overall?** 
+
+We plotted Type Vs log_installs in order to understand the users preference and see the impact of the type of Apps on Installations. 
+```{r type vs log-installs boxplot}
+#Creating box plot for Type, Category, and Content Rating
+ggplot(g_data, aes(Type, log_installs)) + 
+  geom_boxplot(fill="steelblue")+
+  labs(title = "Type by number of Installation",
+     x = "Type",
+     y = "Installs")+
+   theme(plot.title = element_text(hjust = 0.5))
+```
+Here, the graph of type variable and log_installs help us understand the user's preference in terms of a free or paid app. The results of this box plot of free versus paid apps against log_installs infer that majority of users prefer free apps. Thus, while launching any application, it is worthwhile to offer the app to users free of charge as an initial strategy to gain initial downloads and make a user base.
+The box plot of type vs installs can give us an insight into whether being a free or paid app can have a significant impact on the installation. By observing this plot, we can see that free apps have a higher mean installation than paid apps. However, their range overlaps, which shows many paid apps have similar or higher installations than free apps.
+
+
+<br>
+*Figure 3:CATEGORY AVERAGE INSTALLATIONS*
+<br><font size = "3">
+**Which are the top categories based on average Installations?** 
+
+Average category installation graph plot is very essential as it can help us figure out which category apps are most favourite / most downloaded among users. 
+
+For plotting the Average Category Installations -  a new variable of Average Category based on Installations must be created
+The variable called *avg_ctry_installs* has been mutated and updated to the dataset *g_data_updated* in the code below. 
+```{r mutating variable - avg_ctry_installs}
+#Creating a new variable - Average of Category by Installs (avg_install_rating)
+g_data_updated = g_data %>%
+  group_by(Category)%>%
+  mutate(avg_ctry_installs = mean(Installs))
+#Check how the data looks now after adding new variables
+  g_data_updated #Checking on the new dataset with - "avg_ctry_installs"
+```
+```{r bar graph of Category average installations}
+g_data_updated%>%
+  group_by(Category)%>%
+  ggplot(data = .,mapping = aes(x= Category , y = avg_ctry_installs)) +
+  geom_bar(stat = "identity",width = 0.5,fill="steelblue") +
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5))+
+  labs(title = "Category Average Installations",
+     x = "Category",
+     y = "Average Installations ")+
+   theme(plot.title = element_text(hjust = 0.5)) 
+```
+ 
+The graph above shows that the rating has a major effect on the installations. The results suggest the top five categories of the average category rating show a drastic change in average Installations. The top five categories are as followed:
+
+1. Game
+2. Communication
+3. Productivity
+4. Social
+5. Tools
+
+<br>
+*Figure 4:SIZE AVERAGE INSTALLATIONS*
+<br><font size = "3">
+**What is the relation of Size and Installation in Google play store?** 
+```{r scatter plot of Size by Average category Installs}
+g_data_updated %>%
+  group_by(Category)%>%
+ggplot(data = .,mapping = aes(x= Size_MB, y = avg_ctry_installs, na.rm = TRUE)) +
+  geom_point(stat = "identity",width = 0.5, color ="steelblue") +
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5))+
+  labs(title = "Size Average Installations",
+     x = "Size",
+     y = "Average Installations ") +
+   theme(plot.title = element_text(hjust = 0.5))
+```
+The data provided above shows the relationship between the app size and installation frequency. The app with sizes between 0-25 MB has the highest installation frequency which essentially reduces as the app size increases. 
+However, for certain categories, this may not be exactly true. 
+For example, games are generally bigger in size compared to other categories, yet they have higher installs, as seen on the previous plot.
+
+
+<br>
+*Figure 5: CATEGORY AVERAGE RATING*
+<br><font size = "3">
+**Is there any connection of category avg installs and category avg rating?**
+
+As similar to the previous graph, in order to predict the connection of Rating and installations by category. We should plot a graph of the *Category average rating* 
+
+For plotting the Average Category Rating -  We need to create a new variable of Average Category based on rating. So in the below code, we have mutated a variable called *avg_ctry_rating* in an updated dataset called *g_data_updated*. This step was done specifically to plot a graph of Average category rating.
+```{r mutated variable avg_ctry_rating}
+#Creating a new variable - Average of Category by Rating (avg_ctry_rating)
+g_data_updated = g_data %>%
+  group_by(Category)%>%
+  mutate(avg_ctry_rating = mean(Rating)) 
+  g_data_updated # checking the final dataset to make sure the mutation happened properly
+```
+
+```{r bar graph of Category Average Rating}
+g_data_updated%>%
+  group_by(Category)%>%
+ggplot(data = .,mapping = aes(x= Category, y = avg_ctry_rating)) +
+  geom_bar(stat = "identity",width = 0.5,fill="steelblue") +
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5))+
+  labs(title = "Category average rating",x = "Category",y = "Average Rating")+
+   theme(plot.title = element_text(hjust = 0.5))
+```
+Average category vs Rating: This combination of the variable is very important, as it helps aknowledge the top-rated categories as well as nonperforming ones. Based on these assumptions, it is ideal to dig deeper into the apps in those top categories. Leading closer to the results to get the effectiveness of each variable.
+
+By observing the plot, it reflects that our top five categories are: 
+
+1.Family 
+2.Game
+3.Tools 
+4.Productivity & Maps and Navigation 
+5.Communication 
+Therefore, we can say that there is not much effect of ratings on Installation. It is highly based on the necessity or requirement and the solution which the app provides.
+
+
+<br>
+*Figure 6: Google Play Store Category by Price*
+<br><font size = "3">
+**Which category is leading in App charges(Price)? Are the top Install categories Paid?**
+
+Once the target category is selected, it is important to rightly price the app in order to maximize the installs. Paid apps have the advantage to monetize installs directly. Thus, the more the installs more the profitability. 
+
+However, essentially to rightly price the apps. For which knowing avg price in the selected category can help in properly pricing the app. 
+Thus, here we have plotted category against avg. price.
+```{r Category vs Price}
+ggplot(g_data, aes(x=Category, y= Price)) + 
+  geom_point(size=3, color ="steelblue") + 
+  geom_segment(aes(x=Category, 
+                   xend=Category, 
+                   y=0, 
+                   yend=Price)) + 
+  labs(title="Category vs Price", 
+       caption="source: g_data") + 
+  theme(axis.text.x = element_text(angle=90, vjust=0.6))
+```
+The results demonstrate that most of the paid apps in the Google Play Store are inexpensive with a price of less than $10. 
+However, certain categories have higher prices than others. For example, medical apps, which may provide professional medical knowledge, have an avg price of $13.2 and ranging up to $50. Similarly, business category apps also have an avg price of $13. 
+On the other end, categories such as personalization, art/design, and news/magazines have avg prices of less than $2. 
+
+
+<br>
+*Figure 7: Google Play Store App log_installs as a function of Rating by Price*
+<br><font size = "3">
+**What is the relation of loginstalls and rating?**
+
+
+```{r loginstalls vs Rating by price }
+ggplot(g_data,aes(x= log_installs, y= Rating, fill = Price)) +
+  geom_point(alpha=0.35) +
+  geom_smooth(method = "lm") +
+  facet_wrap("Type") +
+  labs(title = "Relationship between Installs and Rating by Price",
+     x = "Log_Installs",
+     y = "Rating")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+This plot shows the relationship between ratings and log_installs. It can be seen that as log_installs increases the ratings tend to decrease in both free and paid apps. This could be due to the range of ratings expands with an increase in installation.
+
+
+<br>
+*Figure 8: CATEGORY VS LOG_INSTALLS*
+<br><font size = "3">
+**Which categories are significantly on the top or at the bottom in terms of installations?**
+
+Based on the graph above, the Categories were plotted against the log_installs to see if there is a significant difference between categories.
+```{r category vs log_installs}
+ggplot(g_data,aes(Category,log_installs)) + 
+  geom_boxplot(color="steelblue") + 
+  # Fixing the long variables to be visible
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))+
+  labs(title = "Number of Installs by Category",x = "Category",y = "Log Installs")+
+   theme(plot.title = element_text(hjust = 0.5))
+```
+The median doesn't vary much from 10-15 log_installs within all categories. Most importantly there are only a few outliers and can see the visualization of the differences between each category. It is also good to note that some categories are known to have fewer installs. This can be based on users needing to use the app on a daily or just use it for a day and delete it.
+
+
+<br>
+*Figure 9: Content_rating VS LOG_INSTALLS*
+<br><font size = "3">
+**Which age group has the majority Installs and what is the type of those apps?**
+
+It is also vital to design and target apps to the right audience to maximize downloads. To see any difference in downloads based on the age group, the data is  plotted in a box-plot of content rating vs. log_installs.
+```{r Content_rating v Log_installs}
+ggplot(g_data, aes(Content_Rating,log_installs, fill = Type)) + 
+  geom_boxplot()+
+  scale_fill_brewer(palette="Paired")+
+  labs(title = "Content Rating influencing number of Installs by Type",
+     x = "Content Rating",
+     y = "Installs")+
+   theme(plot.title = element_text(hjust = 0.5))
+```
+The box plot of `Content_Rating` versus `log_Installs` shows that users tend to download apps that cater to their age group compared to the general or universal apps. The median of the specific age group apps like 10+ or teens is higher than the general apps despite having a single outlier, which in the big data set would not make much difference with its presence.
+
+
+
+# Statisical Analysis for Google Play Store 
+ 
+The Linear Regression model will be tested to determine the importance of the factors
+specifically using the coef, R squared, and slope? The purpose of this model is to identify the factors that increase installation by popularity to assist Google App Store developers. The graphs above suggests that the response variables *identified* are Rating, Reviews, Type, and Category and the dependent variable is installations. Last_Updated is an independent variable that doesn't influence any of the variables. 
+
+Our hypothesis test on each regression coefficient. Essentially, this tests whether there **is** or **is not** a relationship between the 4 variables chosen and the outcome **installs**:
+
+Based on the analysis above, the modeling will decipher a pattern between the different factors. 
+The null hypotheses states that there is no change in the installations based on the rating.
+The alternative hypothesis is that rating will be a constant variable that relates to all other variables and assists the popularity of the app and increases installations.
+
+The analysis will be looking into the relational change in Rating leading to an increase in installs since there are more than 2 other variables estimated to affect the Rating and that groups are somewhat connected the model that will be testing is ANOVA. Through process of elimination, the model will either reject the null or fail to reject the null. 
+
+## Modeling
+
+The model will give an estimate of which variable is the most important out of these factors.
+
+**Modeling for log_installs**
+```{r geom_freqpoly}
+#showing the distribution of the installs 
+g_data %>% 
+  ggplot(g_data, mapping = aes(x = log_installs))+
+  geom_freqpoly(binwidth = 2)
+```
+
+This will help with understanding the distribution of log_installs and when creating the linear models. To investigate this statistically, the distribution of the other variables was also looked into. Our data adresses that the size distribution is skewed right. Secondly, the rating variable is skewed to the left. Lastly, the log_installs variable has a normal distribution - binwidth is 3. All of the apps were last updated in 2019 with a few outliers in 2011 and 2012. 
+
+### The relationship between Rating and Installs
+response variable = log_Installs
+exploratory variable = Rating
+
+H0: There is no impact on number of installs, regardless of the rating given.
+ *installs_no rating = #installs_many rating*
+Ha: The increase in rating results to an increase in app installation.
+*installs_no rating ≠ #installs_many rating*
+```{r rating_lm }
+#creating an object for lm for rating to use in tidy
+rating_lm<- lm(formula = log_installs~ Rating, data = g_data)
+summary(rating_lm)
+```
+```{r tidy rating.lm}
+broom::tidy(rating_lm)
+```
+
+```{r plotting rating_lm}
+#plotting the lm for rating 
+plot(rating_lm)
+```
+
+The residual plot clearly shows a pattern that fails in the linearity assumption model. This linear model is a good fit for relatively rating, but not a good predictor as the rating increases. There is a smaller error in the beginning, but as you go to the left there is a great deal of error in the model.
+
+The Normal Quantile plot is not normal either. Through a closer observation, the end points are far from the regression line. There is a curvature seen in the scale location graph as well.
+
+The summary table shows a negative residual implying the data is overestimated and the t value of rating being 11 results in greater evidence of rejecting the null hypothesis. 
+
+The F stat of 135 yields a large variability in the group all leading to the same conclusion of rejecting the null hypothesis of the group means being equal. 
+
+**Summary** 
+
+After analyzing the data and the models, there is still not strong proof to rejec the null hypothesis. Since the model is unable to prove anything, it can only fail to reject hypothesis. The adjusted R squared suggest a less than 1.5% explanatory power of rating over the average number of installations. The probability is close to zero, but it is 11% due to chance. Collectively, the model is inconclusive and the function fails to reject the null hypotheses.
+
+#### Controlling variation in rating
+In this portion of the test, the rate will be isolated. Hence, there is no variation in the app installed due to the category the app is in. This test will adjust for the category the app is located in, especially to reduce the effect of confounding variables in an observational study or experiment.
+
+```{r mutate height_by_sex}
+#Create a variable (with `mutate()`) that calculates the average rating of a person by Category and add it to a new data frame called `g_data2`
+g_data2 <- g_data %>%
+  group_by(Category) %>% 
+  mutate(rating_by_category = mean(Rating))
+```
+
+```{r mutate height_no_sex}
+#Create a variable `rating_by_category` that subtracts `Rating` from `rating_by_category` to remove the variation in Rating due to Category
+g_data2 <- g_data2 %>% 
+  mutate(rating_by_category = Rating-rating_by_category)
+```
+
+Now we have a variable `rating_by_category` that is "Category neutral". 
+
+```{r regress weight as a function of height_no_sex}
+#Finally, run a regression on Installs and our new variable `rating_by_category`
+lm(formula =  log_installs~ rating_by_category, data = g_data2)
+```
+The coefficient represents the mean increase of installs for every additional point (from a scale of 1 to 5) in rating of the category, the average installs is increased by 4 within the category. 
+
+### The relationship between Reviews and Installs
+
+The relationship between 'Reviews' and 'Installs'
+response variable = log_Installs
+exploratory variable = log_Reviews
+
+H0: There is no impact on the number of installs, regardless of the number of reviews
+ *installs_no review = #installs_many reviews*
+Ha: The increase in Reviews results in an increase in app installation, the difference in Reviews is not due to sampling or by chance.
+*installs_no review ≠ #installs_many reviews*
+
+```{r log_reviews_lm}
+#using the log function for reviews
+#creating a lm inspecting the summary after rating failed ot reject
+log_reviews_lm<- lm(formula = log_installs ~ log_reviews, data = g_data)
+summary(log_reviews_lm)
+```
+
+The coefficients for Reviews is positive; therefore, installs is positively associated with installs.  The model states that 91% of the Reviews can explain the amount of installation that happens. The low standard error that is caused by the large sample size results in very narrow confidence intervals. The coefficient estimate is statistically significant different from 0 (p-value of < 0.05). 
+
+Looking at the major components of the linear regression model, the results conclude that the increase in Reviews will increase in app installation, the difference in Reviews is not due to sampling or by chance.
+
+### Multivariate modeling
+
+1. In the dataset, there are 9365 observations 
+2. Grabbing a sample of 100 to test the model 
+3. This is to test the model and ensure that this is the best result for this dataset.
+
+```{r sampling lm,echo = FALSE}
+#creating a testing linear model for all the important variables
+g_data %>% 
+  slice_sample(n = 100) %>% #Taking a sample of the population
+  lm(formula = log_installs ~ Rating + log_reviews + Price + Size_MB, data = .) %>% 
+  summary() 
+```
+
+After trial and error, as well as testing out different methods of modeling, the best reflection of the dependent variation is *lm(formula = log_installs ~ Rating + log_reviews + Price + Size_MB, data = .)* 
+
+During the test, the following interactions were taken to identify if there were main effects between the variable: 
+- Price * Size_MB
+- Rating * log_reviews
+- Price * Reviews
+
+Mechanics: 
+- The model indicates that around 93% can be explained by what happens with the listed explanatory variables. 
+- Due to the significance level close to 0, suggest that these variables are acceptable to compare to the response variable, which is the amount of downloads. 
+- Given the general knowledge about R squared, it is known that there could be potential lurking variables that would affect the downloads such as: 
+    - The app content
+    - If the reviews were good or bad since the dataset only has numbers. 
+- P-value is lower than the standard .001 or .05, indicating this can be an accurate representation of the overall app population and that low probability is due to chance. 
+- In addition, the findings of p-value are directly in line showing that rating and reviews have the statistically strongest predictors of installation. 
+- Importantly, Size_MB was not a significant factor, as p = 0.87589.
+
+For the developers they are all significant: 
+
+> 1 increase in the review given is on average 1 app downloaded, keeping all other variables constant, especially when price and size are low.
+
+According to the model, the following factors help predict the amount of installations: 
+  - Rating:  A slight negative relationship
+  - Reviews:  A positive relationship
+  - Size_MB: A slight positive relationship
+  - Price: A slight negative relationship
+
+# Validation
+**Insights and Reiteration**
+
+The business problem: 
+What factors impact App downloads and popularity on the Google Play store? How to improve certain aspects of app in order to get the popularity?
+
+The null hypothesis of the business impact: 
+The original assumption made after the findings while solving the problem was that. The null hypothesis states that there is no change in the installations based on the rating. The alternative hypothesis is that rating will be a constant variable that relates to all other variables and assists the popularity of the app and increases installations.
+
+How it was measure:
+The results were obtained by framing the problem, finding key trends, and building models to test out the hypotheses. To determine the importance of different variables the null hypothesis model was tested and trial/error method was applied. 
+
+The solution: 
+Our results casts a new light on the Reviews. Overall, our method was the one that obtained the most robust results during the multivariate modeling giving the highest R- squared. We can clearly see that the estimated values are positive for Reviews, Rating and negative relationship for Price and Size and statistically significant.  
+
+The impact of the solution found: 
+The reviews could've lead to a skewness because as a analyst it is unsure the comments that were written if they were positive or negative. The dataset provided a number of reviews written for the app and used that to analyze the number of installation. Results of rating demonstrate that having an direct effect on installation is not necessarily true.
+
+
+## Evaluations
+
+Through the data analysis, we found that whatever the category is, the rating of the app is the most important factor affecting the installations followed by the size, reviews, and price 
+
+Recommendations:
+
+1. Incentivize or randomly select a few users and ask them to rate or review with a gift exchange, despite positive or negative experience. It is very important to understand the sentiment or emotion of the reviews rather than just counting the number of reviews. Many bad experiences create a bias which can affect the installations. So it is important to enhance the user experience more frequently.
+
+2. It is important to keep the app size as less as possible so that it requires fewer data to download.
+
+3. Taken together, the the analysis shows that proportion of paid apps is very less compared to free apps. It is better to keep an app paid only if it offers a very unique solution. The ideal strategy should be to offer a basic level app for free to give the user an experience of offerings. App with advanced features can be kept paid. Additionally, many apps nowadays are free to download but they have in-app purchases to enable advanced features. This helps to maximize app downloads as the user will download the app just to try as they are free.(Free	8718/Paid	647)
+
+### Reflection
+
+We need to clearly identify our storyline and reitierate our goal in theis analysis. It felt like there was a lack of clarity on process and how the answer will be achieved. 
+
+In addition, to begin with there were less variables and during the tidy step two columns were dropped to clear up the noise.
+
+
+# References
+
+https://www.androidcentral.com/google-play-store/home#:~:text=The%20Play%20Store%20has%20Apps,TV%20and%20Google%20Play%20Newsstand.
+https://www.pewresearch.org/internet/2015/11/10/an-analysis-of-apps-in-the-google-play-store/
+https://buildfire.com/app-statistics/
+https://www.techradar.com/news/google-fuchsia
+
